@@ -31,7 +31,6 @@ func Register(c *gin.Context) {
 func Login(c *gin.Context) {
 	var user models.User
 	var input struct {
-		// Name     string `json:"name"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
@@ -51,7 +50,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := tokenjwt.GenerateJWT(user.Email, user.Role)
+	token, err := tokenjwt.GenerateJWT(user.ID,user.Email,user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
 		return
@@ -59,4 +58,10 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": token,"role":user.Role})
 
+}
+
+func Logout(c *gin.Context){
+	c.SetCookie("Authorization","",-1,"/","",false,true)
+
+	c.JSON(http.StatusOK,gin.H{"message":"Logged out successfully"})
 }

@@ -17,9 +17,15 @@ func AuthMiddleWare(role string) gin.HandlerFunc {
 			return
 		}
 
-		tokenString := strings.Split(authHeader, "Bearer ")[1]
-		claims, err := tokenjwt.ValidateToken(tokenString)
+		tokenParts := strings.Split(authHeader, "Bearer ")
+		if len(tokenParts) != 2 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+			c.Abort()
+			return
+		}
 
+		tokenString := tokenParts[1]
+		claims, err := tokenjwt.ValidateToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
@@ -27,35 +33,47 @@ func AuthMiddleWare(role string) gin.HandlerFunc {
 		}
 
 		if claims.Role != role && role != "" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "You are not autherized"})
+			c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized"})
 			c.Abort()
 			return
 		}
 
-		c.Set("user", claims)
+		c.Set("user_id", claims)
 		c.Next()
+
 	}
 }
-
 func AdminAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString := c.Request.Header.Get("Authorization")
-		if tokenString == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token required"})
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
 			c.Abort()
 			return
 		}
 
-		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+		tokenParts := strings.Split(authHeader, "Bearer ")
+		if len(tokenParts) != 2 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+			c.Abort()
+			return
+		}
 
+		tokenString := tokenParts[1]
 		claims, err := tokenjwt.ValidateToken(tokenString)
-		if err != nil || claims.Role != "admin" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to access this route"})
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			c.Abort()
 			return
 		}
 
-		c.Set("user_id", claims.Email)
+		if claims.Role != "admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access forbidden"})
+			c.Abort()
+			return
+		}
+
 		c.Next()
+
 	}
 }

@@ -40,6 +40,8 @@ func SetUpRouter() *gin.Engine{
 		admin.GET("/orders",controllers.GetAllOrder)
 	}
 
+	router.POST("/logout",controllers.Logout)
+
 	return router
 
 }
