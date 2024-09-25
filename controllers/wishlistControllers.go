@@ -3,6 +3,7 @@ package controllers
 import (
 	"ecommerce/database"
 	"ecommerce/models"
+	"ecommerce/tokenjwt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -42,13 +43,24 @@ func RemoveFromWishlist(c *gin.Context){
 }
 
 func ViewWishlist(c *gin.Context){
-	userID,exists := c.Get("user_id")
+	userIDif,exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusBadRequest,gin.H{"error":"User not authenticated"})
 		return
 	}
 
+	claims,ok := userIDif.(*tokenjwt.Claims)
+	if !ok {
+		c.JSON(http.StatusInternalServerError,gin.H{"error":"Invalid token claims"})
+		return
+	}
+
+	userIDUint := claims.UserID
+
 	var wishlistItems []models.Whishlist
-	database.DB.Where("user_id = ?",userID).Find(&wishlistItems)
+	if err := database.DB.Where("user_id = ?",userIDUint).Find(&wishlistItems).Error; err != nil{
+		c.JSON(http.StatusInternalServerError,gin.H{"error":err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK,wishlistItems)
 }

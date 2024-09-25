@@ -50,18 +50,49 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := tokenjwt.GenerateJWT(user.ID,user.Email,user.Role)
+	token, err := tokenjwt.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
 		return
 	}
+	c.SetCookie("Authorization", token, 3600, "/", "", false, true)
 
-	c.JSON(http.StatusOK, gin.H{"token": token,"role":user.Role})
+	c.JSON(http.StatusOK, gin.H{"message": "Login successfully", "token": token, "role": user.Role})
 
 }
 
-func Logout(c *gin.Context){
-	c.SetCookie("Authorization","",-1,"/","",false,true)
+func Logout(c *gin.Context) {
+	c.SetCookie("Authorization", "", -1, "/", "", false, true)
 
-	c.JSON(http.StatusOK,gin.H{"message":"Logged out successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
+
+func GetAllUsers(c *gin.Context) {
+	tokenString, err := c.Cookie("Authorization")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	claims, err := tokenjwt.ValidateToken(tokenString)
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	if claims.Role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden,Admins only"})
+		return
+	}
+
+	var users []models.User
+	if result := database.DB.Find(&users); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": users})
+}
+
+
