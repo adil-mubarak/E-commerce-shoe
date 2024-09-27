@@ -18,16 +18,16 @@ func CheckOutOrder(c *gin.Context) {
 	}
 
 	var cartItems []models.Cart
-	 if err := database.DB.Where("user_id = ?", order.UserID).Find(&cartItems).Error; err != nil{
-		c.JSON(http.StatusInternalServerError,gin.H{"error":"Could not retrieve cart items"})
+	if err := database.DB.Where("user_id = ?", order.UserID).Find(&cartItems).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve cart items"})
 		return
-	 }
+	}
 
 	var total float64
 	for _, item := range cartItems {
 		var product models.Product
 		if err := database.DB.First(&product, item.ProductID).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found in cart"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 			return
 		}
 		total += float64(item.Quantity) * product.Price
@@ -41,11 +41,15 @@ func CheckOutOrder(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Where("user_id", order.UserID).Delete(&models.Cart{}).Error; err != nil{
-		c.JSON(http.StatusInternalServerError,gin.H{"error":"Could not clear cart"})
+	if err := database.DB.Where("user_id", order.UserID).Delete(&models.Cart{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not clear cart"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Order placed successfully", "order": order})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Order placed successfully",
+		"order":   order,
+	})
 }
 
 func GetOrders(c *gin.Context) {
@@ -54,6 +58,9 @@ func GetOrders(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User not authenticated"})
 		return
 	}
+
+	var order models.Order
+	database.DB.Preload("Address").Preload("User").First(&order, order.ID)
 
 	claims, ok := userIDif.(*tokenjwt.Claims)
 	if !ok {

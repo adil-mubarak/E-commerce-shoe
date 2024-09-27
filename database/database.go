@@ -18,6 +18,6 @@ func ConnectDatabase() {
 		log.Fatal("Failed to connect to database", err)
 	}
 
-	db.AutoMigrate(&models.User{}, &models.Address{}, &models.Product{}, &models.Cart{}, &models.Whishlist{}, &models.Order{})
+	db.AutoMigrate(&models.User{}, &models.Address{}, &models.Product{}, &models.Cart{}, &models.Whishlist{}, &models.Order{},&models.Payment{})
 	DB = db
 }

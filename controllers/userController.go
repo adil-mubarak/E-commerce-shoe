@@ -24,7 +24,10 @@ func Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "User registered successfully",
+		"Login":"/login",
+	})
 
 }
 
@@ -45,6 +48,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	if user.Banned {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Account is banned"})
+		return
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
@@ -57,7 +65,7 @@ func Login(c *gin.Context) {
 	}
 	c.SetCookie("Authorization", token, 3600, "/", "", false, true)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successfully", "token": token, "role": user.Role})
+	c.JSON(http.StatusOK, gin.H{"message": "Login successfully", "token": token, "role": user.Role,"Logout":"/logout"})
 
 }
 
@@ -94,5 +102,3 @@ func GetAllUsers(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"users": users})
 }
-
-

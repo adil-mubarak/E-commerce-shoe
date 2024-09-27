@@ -51,5 +51,24 @@ func BanUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User banned seccessfully", "user": user})
+	c.JSON(http.StatusOK, gin.H{"message": "User banned successfully", "user": user})
+}
+
+func UnBanUser(c *gin.Context) {
+	userID := c.Param("id")
+	var user models.User
+
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	user.Banned = false
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not unban user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User unbanned successfullt", "user": user})
+
 }

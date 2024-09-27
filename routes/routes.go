@@ -33,6 +33,9 @@ func SetUpRouter() *gin.Engine {
 
 		user.POST("/order", controllers.CheckOutOrder)
 		user.GET("/orders", controllers.GetOrders)
+
+		user.POST("/payment/initiate",controllers.InitiatePayment)
+		user.POST("/payment/success",controllers.HandlePaymentSuccess)
 	}
 
 	admin := router.Group("/admin")
@@ -44,7 +47,8 @@ func SetUpRouter() *gin.Engine {
 		admin.DELETE("/products/:id", controllers.DeleteProduct)
 		admin.GET("/orders", controllers.GetAllOrder)
 		admin.GET("/users",controllers.GetAllUsers)
-		admin.PUT("/banusers",controllers.BanUser)
+		admin.PUT("/banusers/:id",controllers.BanUser)
+		admin.PUT("/unbanuser/:id",controllers.UnBanUser)
 		admin.PUT("/updatestatus/:id",controllers.UpdateOrderStatus)
 	}
 
