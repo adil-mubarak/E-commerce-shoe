@@ -10,15 +10,38 @@ import (
 )
 
 func AddToWishlist(c *gin.Context){
+
+	claims,exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized,gin.H{"error":"user not autherized"})
+		return
+	}
+
+	userClaims,ok := claims.(*tokenjwt.Claims)
+	if !ok{
+		c.JSON(http.StatusUnauthorized,gin.H{"error":"Invalid token data"})
+		return
+	}
+
+	userID := userClaims.UserID
+
 	var wishlist models.Whishlist
 	if err := c.ShouldBindJSON(&wishlist); err != nil{
 		c.JSON(http.StatusBadRequest,gin.H{"error":err.Error()})
 		return
 	}
 
+	wishlist.UserID = userID
+
 	var product models.Product
 	if err := database.DB.First(&product,wishlist.ProductID).Error; err != nil{
 		c.JSON(http.StatusNotFound,gin.H{"error":"Product not found"})
+		return
+	}
+
+	var existingWishlist models.Whishlist
+	if err := database.DB.Where("user_id = ? AND product_id = ?",userID,wishlist.ProductID).First(&existingWishlist).Error; err == nil{
+		c.JSON(http.StatusBadRequest,gin.H{"error":"Product is already in the wishlist"})
 		return
 	}
 

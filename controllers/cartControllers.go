@@ -11,11 +11,27 @@ import (
 )
 
 func AddToCart(c *gin.Context) {
+	claims, exist := c.Get("user_id")
+	if !exist {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not autherzide"})
+		return
+	}
+
+	userClaims, ok := claims.(*tokenjwt.Claims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token data"})
+		return
+	}
+
+	userID := userClaims.UserID
+
 	var cart models.Cart
 	if err := c.ShouldBindJSON(&cart); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	cart.UserID = userID
 
 	var product models.Product
 	if err := database.DB.First(&product, cart.ProductID).Error; err != nil {
@@ -23,11 +39,36 @@ func AddToCart(c *gin.Context) {
 		return
 	}
 
+	if cart.Quantity > product.Stock {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Requasted quantity exceeds available stock"})
+		return
+	}
+
+	var existingCart models.Cart
+	if err := database.DB.Where("user_id = ? AND product_id = ?", cart.UserID, cart.ProductID).First(&existingCart).Error; err == nil {
+
+		existingCart.Quantity += cart.Quantity
+
+		if existingCart.Quantity > product.Stock {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Total quantity exceeds available stock"})
+			return
+		}
+
+		if err := database.DB.Save(&existingCart).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update cart quantity"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Cart updated successfully"})
+		return
+
+	}
+
 	if err := database.DB.Create(&cart).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not add to cart"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Product added to cart successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Product added to cart successfully","cart":cart})
 }
 
 func RemoveFromCart(c *gin.Context) {

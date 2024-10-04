@@ -26,16 +26,15 @@ func SetUpRouter() *gin.Engine {
 		user.GET("/wishlist", controllers.ViewWishlist)
 		user.DELETE("/wishlist/:id", controllers.RemoveFromWishlist)
 
-		user.GET("/addresses",controllers.GetUserAddresses)
-		user.POST("/addresses",controllers.CreateAddress)
-		user.PUT("/addresses/:id",controllers.UpdateAddress)
-		user.DELETE("/addresses/:id",controllers.DeleteAddress)
+		user.GET("/addresses", controllers.GetUserAddresses)
+		user.POST("/addresses", controllers.CreateAddress)
+		user.PUT("/addresses/:id", controllers.UpdateAddress)
+		user.DELETE("/addresses/:id", controllers.DeleteAddress)
 
 		user.POST("/order", controllers.CheckOutOrder)
 		user.GET("/orders", controllers.GetOrders)
 
-		user.POST("/payment/initiate",controllers.InitiatePayment)
-		user.POST("/payment/success",controllers.HandlePaymentSuccess)
+		user.POST("/payment", controllers.ProcessPayment)
 	}
 
 	admin := router.Group("/admin")
@@ -46,10 +45,10 @@ func SetUpRouter() *gin.Engine {
 		admin.PUT("/products/:id", controllers.UpdateProduct)
 		admin.DELETE("/products/:id", controllers.DeleteProduct)
 		admin.GET("/orders", controllers.GetAllOrder)
-		admin.GET("/users",controllers.GetAllUsers)
-		admin.PUT("/banusers/:id",controllers.BanUser)
-		admin.PUT("/unbanuser/:id",controllers.UnBanUser)
-		admin.PUT("/updatestatus/:id",controllers.UpdateOrderStatus)
+		admin.GET("/users", controllers.GetAllUsers)
+		admin.PUT("/banusers/:id", controllers.BanUser)
+		admin.PUT("/unbanuser/:id", controllers.UnBanUser)
+		admin.PUT("/updatestatus/:id", controllers.UpdateOrderStatus)
 	}
 
 	router.POST("/logout", controllers.Logout)

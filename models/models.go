@@ -19,6 +19,7 @@ type Product struct {
 	Price       float64 `json:"price"`
 	Stock       uint    `json:"stock"`
 	Category    string  `gorm:"type:varchar(100)" json:"category"`
+	ImageURL    string  `gorm:"type:varchar(255)" json:"image_url"`
 }
 
 type Cart struct {
@@ -55,31 +56,31 @@ type Order struct {
 	Total         float64   `json:"total"`
 	CreatedAt     time.Time `json:"created_at" gorm:"autoCreateTime"`
 	AddressID     uint      `json:"address_id" gorm:"not null"`
-	Address       Address   `gorm:"foreignKey:AddressID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"address,omitempty"`
+	Addresses     string    `json:"address" gorm:"type:varchar(100)"`
+	Address       Address   `gorm:"foreignKey:AddressID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"addresses,omitempty"`
 	User          User      `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"user,omitempty"`
 	PaymentStatus string    `json:"payment_status" gorm:"type:varchar(20);default:'Pending'"`
 	Status        string    `json:"status" gorm:"type:varchar(20);default:'Pending'"`
 }
 
-type OrderedItems struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	OrderID   uint      `json:"order_id" gorm:"not null"`
-	UserID    uint      `json:"user_id" gorm:"not null"`
-	Total     float64   `json:"total"`
-	AddressID uint      `json:"address_id"`
-	Address   Address   `gorm:"foreignKey:AddressID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"address,omitempty"`
-	Status    string    `json:"status" gorm:"type:varchar(20);default:'Pending'"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+type OrderItem struct {
+	ID        uint    `gorm:"primaryKey" json:"id"`
+	OrderID   uint    `json:"order_id"`
+	ProductID uint    `json:"product_id"`
+	Quantity  int     `json:"quantity"`
+	Price     float64 `json:"price"`
+	Product   Product `gorm:"foreignKey:ProductID" json:"product"`
 }
 
 type Payment struct {
-	ID             uint      `gorm:"primarykey" json:"id"`
-	OrderID        uint      `json:"order_id" gorm:"not null"`
-	UserID         uint      `json:"user_id" gorm:"not null"`
-	Amount         float64   `json:"amount"`
-	Status         string    `json:"status" gorm:"varchar(20);default:'Pending'"`
-	PaymentMethod  string    `json:"payment_method"`
-	PaymentID      string    `json:"payment_id"`
-	StripeChargeID string    `json:"stripe_charge_id"`
-	CreatedAt      time.Time `json:"created_at" gorm:"autoCreateTime"`
+	ID            uint      `gorm:"primarykey" json:"id"`
+	OrderID       uint      `json:"order_id" gorm:"not null"`
+	Order         Order     `gorm:"foreignKey:OrderID" json:"order,omitempty"`
+	UserID        uint      `json:"user_id" gorm:"not null"`
+	Amount        float64   `json:"amount"`
+	Currency      string    `json:"currency"`
+	Status        string    `json:"status" gorm:"varchar(20);default:'Pending'"`
+	PaymentMethod string    `json:"payment_method"`
+	PaymentID     string    `json:"payment_id"`
+	CreatedAt     time.Time `json:"created_at" gorm:"autoCreateTime"`
 }
