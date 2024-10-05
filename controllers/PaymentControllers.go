@@ -62,6 +62,16 @@ func ProcessPayment(c *gin.Context) {
 		return
 	}
 
+	if payment.Amount > order.Total{
+		extra := payment.Amount - order.Total
+		c.JSON(http.StatusBadRequest,gin.H{
+			"error":"Insufficient payment",
+			"extra": extra,
+			"total_price":order.Total,
+		})
+		return
+	}
+
 	params := &stripe.PaymentIntentParams{
 		Amount:   stripe.Int64(int64(payment.Amount * 100)), 
 		Currency: stripe.String("inr"),

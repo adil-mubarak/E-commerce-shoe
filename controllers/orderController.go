@@ -56,16 +56,30 @@ func CheckOutOrder(c *gin.Context) {
 
 	log.Printf("Total price calculated: %f\n", total)
 
-	var address models.Address
-	if err := database.DB.Where("user_id = ?", userID).First(&address).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User address not found"})
+	// var address models.Address
+	// if err := database.DB.Where("user_id = ?", userID).First(&address).Error; err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "User address not found"})
+	// 	return
+	// }
+
+	var newAddress models.Address
+	if err := c.ShouldBindJSON(&newAddress); err != nil{
+		log.Printf("Error binding address data: %v",err)
+		c.JSON(http.StatusBadRequest,gin.H{"error":"Invalid address data","details":err.Error()})
+		return
+	}
+
+	newAddress.UserID = userID
+	if err := database.DB.Create(&newAddress).Error; err != nil{
+		c.JSON(http.StatusInternalServerError,gin.H{"error":"Failed to save address","details":err.Error()})
 		return
 	}
 
 	order := models.Order{
 		UserID:    userID,
 		Total:     total,
-		AddressID: address.ID,
+		// AddressID: address.ID,
+		AddressID: newAddress.ID,
 		CreatedAt: time.Now(),
 	}
 

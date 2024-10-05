@@ -45,7 +45,8 @@ type Address struct {
 	Street     string `gorm:"type:varchar(100)" json:"street"`
 	City       string `gorm:"type:varchar(50)" json:"city"`
 	State      string `gorm:"type:varchar(50)" json:"state"`
-	PostalCode string `gorm:"type:varchar(20)" json:"postal_code"`
+	Phone      uint   `gorm:"type:int" json:"phone"`
+	PostalCode uint   `gorm:"type:int" json:"postal_code"`
 	Country    string `gorm:"type:varchar(50)" json:"country"`
 	User       User   `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"user,omitempty"`
 }

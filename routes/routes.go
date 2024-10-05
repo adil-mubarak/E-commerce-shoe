@@ -13,6 +13,8 @@ func SetUpRouter() *gin.Engine {
 	router.POST("/signup", controllers.Register)
 	router.POST("/login", controllers.Login)
 	router.GET("/products", controllers.GetProducts)
+	router.GET("sort/products",controllers.Sorting)
+	router.GET("/filter/products",controllers.Filtering)
 
 	user := router.Group("/user")
 	user.Use(middlewares.AuthMiddleWare("user"))
