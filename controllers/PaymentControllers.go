@@ -101,6 +101,8 @@ func ProcessPayment(c *gin.Context) {
 	}
 
 	payment.UserID = userID
+	payment.Currency = "INR"
+	payment.PaymentMethod = "Stripe"
 	payment.Status = "succeeded"
 	payment.PaymentID = pi.ID
 	payment.OrderID = order.ID
