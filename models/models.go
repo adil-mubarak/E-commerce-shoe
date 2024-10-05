@@ -57,20 +57,10 @@ type Order struct {
 	Total         float64   `json:"total"`
 	CreatedAt     time.Time `json:"created_at" gorm:"autoCreateTime"`
 	AddressID     uint      `json:"address_id" gorm:"not null"`
-	Addresses     string    `json:"address" gorm:"type:varchar(100)"`
 	Address       Address   `gorm:"foreignKey:AddressID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"addresses,omitempty"`
 	User          User      `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"user,omitempty"`
 	PaymentStatus string    `json:"payment_status" gorm:"type:varchar(20);default:'Pending'"`
 	Status        string    `json:"status" gorm:"type:varchar(20);default:'Pending'"`
-}
-
-type OrderItem struct {
-	ID        uint    `gorm:"primaryKey" json:"id"`
-	OrderID   uint    `json:"order_id"`
-	ProductID uint    `json:"product_id"`
-	Quantity  int     `json:"quantity"`
-	Price     float64 `json:"price"`
-	Product   Product `gorm:"foreignKey:ProductID" json:"product"`
 }
 
 type Payment struct {

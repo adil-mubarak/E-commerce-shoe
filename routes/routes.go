@@ -19,6 +19,7 @@ func SetUpRouter() *gin.Engine {
 	user := router.Group("/user")
 	user.Use(middlewares.AuthMiddleWare("user"))
 	{
+		user.GET("/products",controllers.GetProducts)
 		user.POST("/cart", controllers.AddToCart)
 		user.GET("/carts", controllers.ViewCart)
 		user.PUT("/cart/:id", controllers.UpdateCartQuantity)

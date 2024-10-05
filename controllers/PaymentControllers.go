@@ -11,6 +11,12 @@ import (
 	"github.com/stripe/stripe-go/v74/paymentintent"
 )
 
+const stripeSecretKey = "sk_test_51Q3VDSA4q5XQgDF4Exe4KJGgrjRZl2NQjCliTKMWDFLk4licXMyUibc3OGJ6IGCpNrR6hPkGw47D3xbu5utTNyDG00mgJvskaw"
+
+func init() {
+	stripe.Key = stripeSecretKey
+}
+
 func ProcessPayment(c *gin.Context) {
 	claims, exists := c.Get("user_id")
 	if !exists {
@@ -24,7 +30,7 @@ func ProcessPayment(c *gin.Context) {
 		return
 	}
 
-	userID := userClaims.UserID 
+	userID := userClaims.UserID
 	if userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
 		return
@@ -55,25 +61,25 @@ func ProcessPayment(c *gin.Context) {
 	if payment.Amount < order.Total {
 		remaining := order.Total - payment.Amount
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Insufficient payment",
-			"remaining": remaining,
-			"total_price":order.Total,
+			"error":       "Insufficient payment",
+			"remaining":   remaining,
+			"total_price": order.Total,
 		})
 		return
 	}
 
-	if payment.Amount > order.Total{
+	if payment.Amount > order.Total {
 		extra := payment.Amount - order.Total
-		c.JSON(http.StatusBadRequest,gin.H{
-			"error":"Insufficient payment",
-			"extra": extra,
-			"total_price":order.Total,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":       "Insufficient payment",
+			"extra":       extra,
+			"total_price": order.Total,
 		})
 		return
 	}
 
 	params := &stripe.PaymentIntentParams{
-		Amount:   stripe.Int64(int64(payment.Amount * 100)), 
+		Amount:   stripe.Int64(int64(payment.Amount * 100)),
 		Currency: stripe.String("inr"),
 	}
 
@@ -86,7 +92,7 @@ func ProcessPayment(c *gin.Context) {
 	_, err = paymentintent.Confirm(
 		pi.ID,
 		&stripe.PaymentIntentConfirmParams{
-			PaymentMethod: stripe.String("pm_card_visa"), 
+			PaymentMethod: stripe.String("pm_card_visa"),
 		},
 	)
 	if err != nil {
@@ -94,7 +100,7 @@ func ProcessPayment(c *gin.Context) {
 		return
 	}
 
-	payment.UserID = userID 
+	payment.UserID = userID
 	payment.Status = "succeeded"
 	payment.PaymentID = pi.ID
 	payment.OrderID = order.ID

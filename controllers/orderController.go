@@ -4,20 +4,13 @@ import (
 	"ecommerce/database"
 	"ecommerce/models"
 	"ecommerce/tokenjwt"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stripe/stripe-go/v74"
-	"github.com/stripe/stripe-go/v74/paymentintent"
 )
-
-const stripeSecretKey = "sk_test_51Q3VDSA4q5XQgDF4Exe4KJGgrjRZl2NQjCliTKMWDFLk4licXMyUibc3OGJ6IGCpNrR6hPkGw47D3xbu5utTNyDG00mgJvskaw"
-
-func init() {
-	stripe.Key = stripeSecretKey
-}
 
 func CheckOutOrder(c *gin.Context) {
 	claims, exists := c.Get("user_id")
@@ -56,29 +49,40 @@ func CheckOutOrder(c *gin.Context) {
 
 	log.Printf("Total price calculated: %f\n", total)
 
-	// var address models.Address
-	// if err := database.DB.Where("user_id = ?", userID).First(&address).Error; err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "User address not found"})
-	// 	return
-	// }
-
 	var newAddress models.Address
-	if err := c.ShouldBindJSON(&newAddress); err != nil{
-		log.Printf("Error binding address data: %v",err)
-		c.JSON(http.StatusBadRequest,gin.H{"error":"Invalid address data","details":err.Error()})
+	if err := c.ShouldBindJSON(&newAddress); err != nil {
+		log.Printf("Error binding address data: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid address data", "details": err.Error()})
+		return
+	}
+
+	PhoneNumber := len(fmt.Sprint(newAddress.Phone))
+	if PhoneNumber > 10 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Phone number is more than 10 digits"})
+		return
+	} else if PhoneNumber < 10 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Phone number is less than 10 digits"})
+		return
+	}
+
+	PostalCode := len(fmt.Sprint(newAddress.PostalCode))
+	if PostalCode > 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Postal code is more than 6 digits"})
+		return
+	} else if PostalCode < 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Postal code is less than 6 digits"})
 		return
 	}
 
 	newAddress.UserID = userID
-	if err := database.DB.Create(&newAddress).Error; err != nil{
-		c.JSON(http.StatusInternalServerError,gin.H{"error":"Failed to save address","details":err.Error()})
+	if err := database.DB.Create(&newAddress).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save address", "details": err.Error()})
 		return
 	}
 
 	order := models.Order{
 		UserID:    userID,
 		Total:     total,
-		// AddressID: address.ID,
 		AddressID: newAddress.ID,
 		CreatedAt: time.Now(),
 	}
@@ -88,48 +92,18 @@ func CheckOutOrder(c *gin.Context) {
 		return
 	}
 
-	amountInPaisa := int64(total * 100)
-
-	params := &stripe.PaymentIntentParams{
-		Amount:             stripe.Int64(amountInPaisa),
-		Currency:           stripe.String("inr"),
-		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
-	}
-
-	pi, err := paymentintent.New(params)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to create payment intent",
-			"details": err.Error(),
-		})
+	if err := database.DB.Where("user_id = ?", userID).Delete(&models.Cart{}).Error; err != nil {
+		log.Printf("Failed to clear cart after checkout: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear cart after checkout"})
 		return
 	}
 
-	payment := models.Payment{
-		UserID:        userID,
-		Amount:        total,
-		Status:        "Pending",
-		PaymentID:     pi.ID,
-		OrderID:       order.ID,
-		PaymentMethod: "Stripe",
-	}
-
-	if err := database.DB.Create(&payment).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to save payment",
-			"details": err.Error(),
-		})
-		return
-	}
-
-	log.Printf("Checkout saved successfully: %v", payment)
+	log.Printf("Cart cleared successfully for user ID: %d\n", userID)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":       "Checkout successful",
-		"total_price":   total,
-		"client_secret": pi.ClientSecret,
-		"payment_id":    pi.ID,
-		"Order_id":      order.ID,
+		"message":     "Checkout successful",
+		"total_price": total,
+		"Order_id":    order.ID,
 	})
 }
 
@@ -158,5 +132,3 @@ func GetOrders(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, orders)
 }
-
-
