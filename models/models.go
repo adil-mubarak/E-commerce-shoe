@@ -16,10 +16,10 @@ type Product struct {
 	ID          uint    `gorm:"primaryKey" json:"id"`
 	Name        string  `gorm:"type:varchar(100)" json:"name"`
 	Description string  `gorm:"type:varchar(255)" json:"description"`
-	Price       float64 `json:"price"`
+	Price       float64 `gorm:"type:double(10,2);not null"  json:"price"`
 	Stock       uint    `json:"stock"`
 	Category    string  `gorm:"type:varchar(100)" json:"category"`
-	ImageURL    string  `gorm:"type:varchar(255)" json:"image_url"`
+	ImageURL    string  `gorm:"type:text" json:"image_url"`
 }
 
 type Cart struct {

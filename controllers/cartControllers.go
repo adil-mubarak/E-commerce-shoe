@@ -40,7 +40,11 @@ func AddToCart(c *gin.Context) {
 	}
 
 	if cart.Quantity > product.Stock {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Requasted quantity exceeds available stock"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Requasted quantity exceeds available stock",
+			"Available" :product.Stock,
+			"Requested":cart.Quantity,
+		})
 		return
 	}
 

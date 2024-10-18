@@ -44,6 +44,14 @@ func CheckOutOrder(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Product not found in cart"})
 			return
 		}
+
+		if item.Quantity > product.Stock {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("Not enough stock for product %s. Available: %d, Requested: %d", product.Name, product.Stock, item.Quantity),
+			})
+			return
+		}
+
 		total += float64(item.Quantity) * product.Price
 	}
 
@@ -90,6 +98,21 @@ func CheckOutOrder(c *gin.Context) {
 	if err := database.DB.Create(&order).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not place order", "details": err.Error()})
 		return
+	}
+
+	for _, item := range cartItems {
+		var product models.Product
+		if err := database.DB.First(&product, item.ProductID).Error; err != nil {
+			log.Printf("Product not found: %v", err)
+			continue
+		}
+
+		product.Stock -= item.Quantity
+		if err := database.DB.Save(&product).Error; err != nil {
+			log.Printf("failed to update stock for product %d: %v", product.ID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update stock"})
+			return
+		}
 	}
 
 	if err := database.DB.Where("user_id = ?", userID).Delete(&models.Cart{}).Error; err != nil {

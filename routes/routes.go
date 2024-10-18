@@ -10,16 +10,19 @@ import (
 func SetUpRouter() *gin.Engine {
 	router := gin.Default()
 
+	router.MaxMultipartMemory = 8 << 20
+
 	router.POST("/signup", controllers.Register)
 	router.POST("/login", controllers.Login)
 	router.GET("/products", controllers.GetProducts)
-	router.GET("sort/products",controllers.Sorting)
-	router.GET("/filter/products",controllers.Filtering)
+	router.GET("sort/products", controllers.Sorting)
+	router.GET("/filter/products", controllers.Filtering)
+	router.POST("/refresh-token", controllers.RefreshToken)
 
 	user := router.Group("/user")
 	user.Use(middlewares.AuthMiddleWare("user"))
 	{
-		user.GET("/products",controllers.GetProducts)
+		user.GET("/products", controllers.GetProducts)
 		user.POST("/cart", controllers.AddToCart)
 		user.GET("/carts", controllers.ViewCart)
 		user.PUT("/cart/:id", controllers.UpdateCartQuantity)
@@ -46,6 +49,7 @@ func SetUpRouter() *gin.Engine {
 		admin.GET("/products", controllers.GetProducts)
 		admin.POST("/product", controllers.CreateProduct)
 		admin.PUT("/products/:id", controllers.UpdateProduct)
+		admin.PUT("/product/image/:id", controllers.UploadFile)
 		admin.DELETE("/products/:id", controllers.DeleteProduct)
 		admin.GET("/orders", controllers.GetAllOrder)
 		admin.GET("/users", controllers.GetAllUsers)

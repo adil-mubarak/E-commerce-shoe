@@ -26,7 +26,7 @@ func Register(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User registered successfully",
-		"Login":"/login",
+		"Login":   "/login",
 	})
 
 }
@@ -63,42 +63,56 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
 		return
 	}
-	c.SetCookie("Authorization", token, 3600, "/", "", false, true)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successfully", "token": token, "role": user.Role,"Logout":"/logout"})
+	refreshToken, err := tokenjwt.RefreshJWT(user.ID, user.Email,user.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating refresh token"})
+		return
+	}
+
+	c.SetCookie("Authorization", token, 3600, "/", "", false, true)
+	c.SetCookie("RefreshToken", refreshToken, 7*24*3600, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "Login successfully",
+		"token":        token,
+		"refreshtoken": refreshToken,
+		"role":         user.Role,
+		"Logout":       "/logout",
+	})
 
 }
 
 func Logout(c *gin.Context) {
 	c.SetCookie("Authorization", "", -1, "/", "", false, true)
+	c.SetCookie("RefreshToken","",-1,"/","",false,true)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
-func GetAllUsers(c *gin.Context) {
-	tokenString, err := c.Cookie("Authorization")
+func RefreshToken(c *gin.Context) {
+	var request struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		return
+	}
+
+	refreshClaims, err := tokenjwt.ValidateRefreshToken(request.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 		return
 	}
 
-	claims, err := tokenjwt.ValidateToken(tokenString)
-
+	newAccessToken, err := tokenjwt.GenerateJWT(refreshClaims.UserID, refreshClaims.Email, refreshClaims.Role)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating new access token"})
 		return
 	}
 
-	if claims.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden,Admins only"})
-		return
-	}
-
-	var users []models.User
-	if result := database.DB.Find(&users); result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"users": users})
+	c.JSON(http.StatusOK, gin.H{
+		"access_token": newAccessToken,
+	})
 }
